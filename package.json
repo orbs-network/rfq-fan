@@ -1,0 +1,38 @@
+{
+    "name": "@orbs-network/rfq-fan",
+    "version": "1.0.0",
+    "private": true,
+    "license": "MIT",
+    "author": "yuval@orbs.com",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/orbs-network/rfq-fan.git"
+    },
+    "main": "dist/index.js",
+    "dependencies": {
+        "@defi.org/web3-candies": "^4.20.14",
+        "@uniswap/uniswapx-sdk": "^2.0.1-alpha.10",
+        "chalk": "^5.3.0",
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2",
+        "lodash": "^4.17.21",
+        "redis": "^4.7.0"
+    },
+    "devDependencies": {
+        "@types/body-parser": "^1.19.4",
+        "@types/cors": "^2.8.15",
+        "@types/express": "^4.17.20",
+        "@types/lodash": "^4.17.7",
+        "@types/whatwg-fetch": "^0.0.33",
+        "@vercel/ncc": "0.x",
+        "prettier": "3.1.1"
+    },
+    "scripts": {
+        "prettier": "prettier --write '{contracts,src,test}/**/*.{ts,js,json,sol}'",
+        "prebuild": "rm -rf dist && npm run prettier",
+        "preinstall": "git submodule update -i -r",
+        "build": "tsc",
+        "status": "node -e \"require('./dist/index.js').status().then(console.log)\"",
+        "start": "npx ts-node src/index.ts"
+    }
+}
