@@ -1,4 +1,3 @@
-
 import { createClient } from "redis";
 import logger from "./logger";
 const OPERATION_TIMEOUT = 200;
@@ -36,10 +35,18 @@ class RedisWrapper {
 
   public set(key: string, value: string): Promise<void> {
     logger.verbose("RedisWrapper::set", key, value);
-    return Promise.race([this.client.set(key, value), timeout(OPERATION_TIMEOUT)]);
+    return Promise.race([
+      this.client.set(key, value),
+      timeout(OPERATION_TIMEOUT),
+    ]);
   }
 
-  public async setX(key: string, value: string, expire = 600, executionTimeout = 5000): Promise<void> {
+  public async setX(
+    key: string,
+    value: string,
+    expire = 600,
+    executionTimeout = 5000,
+  ): Promise<void> {
     logger.verbose("RedisWrapper::setX", key, value, expire);
     const setX = async () => {
       await this.client.set(key, value), await this.client.expire(key, expire);
@@ -53,16 +60,25 @@ class RedisWrapper {
   }
 
   public async incr(key: string, ttl?: number): Promise<number> {
-    let value = await Promise.race([this.client.incr(key), timeout(OPERATION_TIMEOUT)]);
+    let value = await Promise.race([
+      this.client.incr(key),
+      timeout(OPERATION_TIMEOUT),
+    ]);
     if (ttl) {
-      await Promise.race([this.client.expire(key, ttl), timeout(OPERATION_TIMEOUT)]);
+      await Promise.race([
+        this.client.expire(key, ttl),
+        timeout(OPERATION_TIMEOUT),
+      ]);
     }
     return value;
   }
 
   public async publish(channel: string, message: string): Promise<number> {
     logger.verbose("RedisWrapper::publish", channel, message);
-    return Promise.race([this.client.publish(channel, message), timeout(OPERATION_TIMEOUT)]);
+    return Promise.race([
+      this.client.publish(channel, message),
+      timeout(OPERATION_TIMEOUT),
+    ]);
   }
 }
 

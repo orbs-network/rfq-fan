@@ -24,14 +24,12 @@
         "@types/express": "^4.17.20",
         "@types/lodash": "^4.17.7",
         "@types/whatwg-fetch": "^0.0.33",
-        "@vercel/ncc": "0.x",
-        "prettier": "3.1.1"
+        "@vercel/ncc": "0.x"
     },
     "scripts": {
-        "prettier": "prettier --write '{contracts,src,test}/**/*.{ts,js,json,sol}'",
-        "prebuild": "rm -rf dist && npm run prettier",
+        "prebuild": "rm -rf dist",
         "preinstall": "git submodule update -i -r",
-        "build": "tsc",
+        "build": "npm run prebuild && tsc",
         "status": "node -e \"require('./dist/index.js').status().then(console.log)\"",
         "start": "npx ts-node src/index.ts"
     }

@@ -18,7 +18,12 @@ export interface ISolver {
   type: string;
   getPrice(c: CommonConfig, rfq: RFQ): Promise<Quote>;
   quote(c: CommonConfig, rfq: RFQ): Promise<Quote>;
-  dutchQuote(c: CommonConfig, rfq: RFQ, dutchPrice: string, dutchIndex: number): Promise<QuoteLite>;
+  dutchQuote(
+    c: CommonConfig,
+    rfq: RFQ,
+    dutchPrice: string,
+    dutchIndex: number,
+  ): Promise<QuoteLite>;
 }
 
 export class OnchainSolver implements ISolver {
@@ -32,7 +37,16 @@ export class OnchainSolver implements ISolver {
   tokenProxyAddress?: string;
   disabled: boolean;
 
-  constructor(data: { name: string; chainId: number; url: string; extra?: any; type: string; swapGasUnits?: number; tokenProxyAddress?: string; disabled?: boolean }) {
+  constructor(data: {
+    name: string;
+    chainId: number;
+    url: string;
+    extra?: any;
+    type: string;
+    swapGasUnits?: number;
+    tokenProxyAddress?: string;
+    disabled?: boolean;
+  }) {
     this.name = data.name;
     this.url = data.url;
     this.extra = data.extra;
@@ -73,7 +87,15 @@ export class offChainSolver implements ISolver {
   swapGasUnits?: number;
   disabled: boolean;
 
-  constructor(data: { name: string; chainId: number; url: string; extraDynamic?: Function; dutchParams?: Function; swapGasUnits?: number; disabled?: boolean }) {
+  constructor(data: {
+    name: string;
+    chainId: number;
+    url: string;
+    extraDynamic?: Function;
+    dutchParams?: Function;
+    swapGasUnits?: number;
+    disabled?: boolean;
+  }) {
     this.name = data.name;
     this.solverType = "Offchain";
     this.type = "External";
@@ -97,7 +119,12 @@ export class offChainSolver implements ISolver {
     return Promise.resolve({} as Quote);
   }
 
-  async dutchQuote(c: CommonConfig, rfq: RFQ, dutchPrice: string, dutchIndex: number): Promise<QuoteLite> {
+  async dutchQuote(
+    c: CommonConfig,
+    rfq: RFQ,
+    dutchPrice: string,
+    dutchIndex: number,
+  ): Promise<QuoteLite> {
     let solverParams = this.extra || {};
     //@ts-ignore
     logger.info("dutchQuote", this.name, dutchPrice, dutchIndex);

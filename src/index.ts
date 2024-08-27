@@ -2,39 +2,47 @@ import express, { Request, Response } from "express";
 import { Wrapper } from "./wrapper";
 import logger from "./logger";
 
+console.log("1------------------------------------------------");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware to parse JSON
 app.use(express.json());
 
-const wrapper = new Wrapper()
+const wrapper = new Wrapper();
 
 function sendErr(res: Response, status: number, msg: string) {
-  logger.error(`${status} ${msg}`)
-  res.status(status).send(msg)
+  logger.error(`${status} ${msg}`);
+  res.status(status).send(msg);
 }
 // GET /api/rfq/pairprice?chainid=137&pair=WETH/USDT&amount=10&side=1&isbase=1' --header 'x-apikey: API_KEY'
 app.get("/api/rfq/pairprice", (req: Request, res: Response) => {
   const { chainid, pair, amount, side, isbase } = req.query;
   const apiKey = req.header("x-api-key");
   if (!chainid) {
-    return sendErr(res, 500, 'chainId is missing')
+    return sendErr(res, 500, "chainId is missing");
   }
   if (!pair) {
-    return sendErr(res, 500, 'pair is missing')
+    return sendErr(res, 500, "pair is missing");
   }
   if (!amount) {
-    return sendErr(res, 500, 'amount is missing')
+    return sendErr(res, 500, "amount is missing");
   }
   if (!side) {
-    return sendErr(res, 500, 'side is missing')
+    return sendErr(res, 500, "side is missing");
   }
   if (!isbase) {
-    return sendErr(res, 500, 'isBase is missing')
+    return sendErr(res, 500, "isBase is missing");
   }
 
-  wrapper.quote(chainid as string, pair as string, amount as string, side as string, (isbase === "true"))
+  wrapper.quote(
+    chainid as string,
+    pair as string,
+    amount as string,
+    side as string,
+    isbase === "true",
+  );
 
   // You can implement your own logic to validate the apiKey or check query params
 
@@ -49,7 +57,6 @@ app.get("/api/rfq/pairprice", (req: Request, res: Response) => {
 
   res.json(response);
 });
-
 
 // POST /api/rfq/firm
 app.post("/api/rfq/firm", (req: Request, res: Response) => {

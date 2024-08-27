@@ -7,8 +7,18 @@ export const EXECUTOR_ABI = [
     stateMutability: "nonpayable",
     type: "constructor",
   },
-  { inputs: [{ internalType: "address", name: "sender", type: "address" }], name: "InvalidSender", type: "error" },
-  { inputs: [], name: "VERSION", outputs: [{ internalType: "uint8", name: "", type: "uint8" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [{ internalType: "address", name: "sender", type: "address" }],
+    name: "InvalidSender",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "VERSION",
+    outputs: [{ internalType: "uint8", name: "", type: "uint8" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [
       {
@@ -37,19 +47,37 @@ export const EXECUTOR_ABI = [
     stateMutability: "nonpayable",
     type: "function",
   },
-  { inputs: [], name: "reactor", outputs: [{ internalType: "contract IReactor", name: "", type: "address" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [],
+    name: "reactor",
+    outputs: [{ internalType: "contract IReactor", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [
       {
         components: [
           {
             components: [
-              { internalType: "contract IReactor", name: "reactor", type: "address" },
+              {
+                internalType: "contract IReactor",
+                name: "reactor",
+                type: "address",
+              },
               { internalType: "address", name: "swapper", type: "address" },
               { internalType: "uint256", name: "nonce", type: "uint256" },
               { internalType: "uint256", name: "deadline", type: "uint256" },
-              { internalType: "contract IValidationCallback", name: "additionalValidationContract", type: "address" },
-              { internalType: "bytes", name: "additionalValidationData", type: "bytes" },
+              {
+                internalType: "contract IValidationCallback",
+                name: "additionalValidationContract",
+                type: "address",
+              },
+              {
+                internalType: "bytes",
+                name: "additionalValidationData",
+                type: "bytes",
+              },
             ],
             internalType: "struct OrderInfo",
             name: "info",
@@ -57,7 +85,11 @@ export const EXECUTOR_ABI = [
           },
           {
             components: [
-              { internalType: "contract ERC20", name: "token", type: "address" },
+              {
+                internalType: "contract ERC20",
+                name: "token",
+                type: "address",
+              },
               { internalType: "uint256", name: "amount", type: "uint256" },
               { internalType: "uint256", name: "maxAmount", type: "uint256" },
             ],
@@ -89,7 +121,13 @@ export const EXECUTOR_ABI = [
     stateMutability: "nonpayable",
     type: "function",
   },
-  { inputs: [], name: "treasury", outputs: [{ internalType: "contract Treasury", name: "", type: "address" }], stateMutability: "view", type: "function" },
+  {
+    inputs: [],
+    name: "treasury",
+    outputs: [{ internalType: "contract Treasury", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
   {
     inputs: [
       { internalType: "address", name: "filler", type: "address" },
@@ -97,12 +135,24 @@ export const EXECUTOR_ABI = [
         components: [
           {
             components: [
-              { internalType: "contract IReactor", name: "reactor", type: "address" },
+              {
+                internalType: "contract IReactor",
+                name: "reactor",
+                type: "address",
+              },
               { internalType: "address", name: "swapper", type: "address" },
               { internalType: "uint256", name: "nonce", type: "uint256" },
               { internalType: "uint256", name: "deadline", type: "uint256" },
-              { internalType: "contract IValidationCallback", name: "additionalValidationContract", type: "address" },
-              { internalType: "bytes", name: "additionalValidationData", type: "bytes" },
+              {
+                internalType: "contract IValidationCallback",
+                name: "additionalValidationContract",
+                type: "address",
+              },
+              {
+                internalType: "bytes",
+                name: "additionalValidationData",
+                type: "bytes",
+              },
             ],
             internalType: "struct OrderInfo",
             name: "info",
@@ -110,7 +160,11 @@ export const EXECUTOR_ABI = [
           },
           {
             components: [
-              { internalType: "contract ERC20", name: "token", type: "address" },
+              {
+                internalType: "contract ERC20",
+                name: "token",
+                type: "address",
+              },
               { internalType: "uint256", name: "amount", type: "uint256" },
               { internalType: "uint256", name: "maxAmount", type: "uint256" },
             ],

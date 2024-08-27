@@ -1,12 +1,25 @@
-import { Abi, Token, TokenData, contract, erc20abi, isNativeAddress, wrapToken } from "@defi.org/web3-candies";
+import {
+  Abi,
+  Token,
+  TokenData,
+  contract,
+  erc20abi,
+  isNativeAddress,
+  wrapToken,
+} from "@defi.org/web3-candies";
 import { CommonConfig } from "./config";
 import web3 from "web3";
 import logger from "./logger";
 
-
 const web3Cache: { [key: string]: web3 } = {};
 
-export function erc20<T>(name: string, address: string, decimals?: number, extendAbi?: Abi, w3?: web3): Token & T {
+export function erc20<T>(
+  name: string,
+  address: string,
+  decimals?: number,
+  extendAbi?: Abi,
+  w3?: web3,
+): Token & T {
   const abi = extendAbi ? [...erc20abi, ...extendAbi] : erc20abi;
   address = web3.utils.toChecksumAddress(address);
   const result = contract<Token & T>(abi, address, undefined, w3);
@@ -16,7 +29,10 @@ export function erc20<T>(name: string, address: string, decimals?: number, exten
 
 async function fetchErc20(address: string, w3: web3): Promise<TokenData> {
   const e = erc20("", address, undefined, undefined, w3);
-  const [decimals, symbol] = await Promise.all([e.decimals(), e.methods.symbol().call()]);
+  const [decimals, symbol] = await Promise.all([
+    e.decimals(),
+    e.methods.symbol().call(),
+  ]);
   return { address: web3.utils.toChecksumAddress(address), decimals, symbol };
 }
 
@@ -37,7 +53,9 @@ export async function tryFetchErc20(c: CommonConfig, address: string) {
     tokensCache[address] = erc20;
     return erc20;
   } catch (e) {
-    logger.warn(`tryFetchErc20 throw ${address} chainId:${c.chainId} ${c.networkUrl} backup:${c.networkUrlBackup}`);
+    logger.warn(
+      `tryFetchErc20 throw ${address} chainId:${c.chainId} ${c.networkUrl} backup:${c.networkUrlBackup}`,
+    );
     return {
       address,
       symbol: "",
@@ -52,7 +70,9 @@ export async function getWeb3(c: CommonConfig) {
     try {
       let w = new web3(c.networkUrl);
       if (!(await w.eth.net.isListening())) {
-        logger.warn(`Failed to connect to ${c.networkUrl}, using fallback ${c.networkUrlBackup}`);
+        logger.warn(
+          `Failed to connect to ${c.networkUrl}, using fallback ${c.networkUrlBackup}`,
+        );
         w = new web3(c.networkUrlBackup);
       }
       monitorWeb3(c);
@@ -64,7 +84,10 @@ export async function getWeb3(c: CommonConfig) {
       try {
         w = new web3(c.networkUrlBackup);
       } catch (e) {
-        logger.warn("init web3 failed, using backup url failed", c.networkUrlBackup);
+        logger.warn(
+          "init web3 failed, using backup url failed",
+          c.networkUrlBackup,
+        );
       }
       monitorWeb3(c);
       if (w) {
@@ -78,7 +101,9 @@ export async function getWeb3(c: CommonConfig) {
 async function monitorWeb3(c: CommonConfig) {
   let w3 = web3Cache[c.chainId];
   if (!w3) {
-    logger.warn(`Web3 is not initialized, chainId: ${c.chainId}, url: ${c.networkUrl}`);
+    logger.warn(
+      `Web3 is not initialized, chainId: ${c.chainId}, url: ${c.networkUrl}`,
+    );
     return;
   }
   const isListening = await w3.eth.net.isListening();
@@ -86,11 +111,17 @@ async function monitorWeb3(c: CommonConfig) {
     try {
       w3 = new web3(c.networkUrlBackup);
       web3Cache[c.chainId] = w3;
-      logger.warn(`Web3 is reconnected listening, chainId: ${c.chainId}, url: ${c.networkUrl}, using backup url: ${c.networkUrlBackup}`);
+      logger.warn(
+        `Web3 is reconnected listening, chainId: ${c.chainId}, url: ${c.networkUrl}, using backup url: ${c.networkUrlBackup}`,
+      );
       const status = await w3.eth.net.isListening();
-      logger.warn(`Web3 is reconnected listening, chainId: ${c.chainId}, url: ${c.networkUrl}, using backup url: ${c.networkUrlBackup}, status: ${status}`);
+      logger.warn(
+        `Web3 is reconnected listening, chainId: ${c.chainId}, url: ${c.networkUrl}, using backup url: ${c.networkUrlBackup}, status: ${status}`,
+      );
     } catch (e) {
-      logger.warn(`Web3 is reconnected failed, chainId: ${c.chainId}, url: ${c.networkUrl}, using backup url: ${c.networkUrlBackup}`);
+      logger.warn(
+        `Web3 is reconnected failed, chainId: ${c.chainId}, url: ${c.networkUrl}, using backup url: ${c.networkUrlBackup}`,
+      );
     }
   }
 }

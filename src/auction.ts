@@ -2,7 +2,7 @@ import { CommonConfig } from "./config";
 import { quote } from "./quote";
 import { bn, isNativeAddress } from "@defi.org/web3-candies";
 import logger from "./logger";
-//import { generateSessionId, getDollarValue } from "./bi";
+import { generateSessionId, getDollarValue } from "./bi";
 import { AuctionResult, ErrorObj, Quote, RFQ, SignedQuote } from "./types";
 import { tryFetchErc20 } from "./w3";
 import { getDutchPrice } from "./utils";
@@ -11,23 +11,38 @@ import { getTokenPrice } from "./price-oracle";
 //import { simulateQuote } from "./swap";
 import redisWrapper from "./redis";
 
-const THENA_GOV_TOKENS = ["0xf4c8e32eadec4bfe97e0f595add0f4450a863a11", "0xcdc3a010a3473c0c4b2cb03d8489d6ba387b83cd"];
+const THENA_GOV_TOKENS = [
+  "0xf4c8e32eadec4bfe97e0f595add0f4450a863a11",
+  "0xcdc3a010a3473c0c4b2cb03d8489d6ba387b83cd",
+];
 
-export async function quoteAuction(c: CommonConfig, rfq: RFQ & { outAmount: string; slippage: number }): Promise<AuctionResult | ErrorObj> {
-  const sessionId = rfq.sessionId || "-1"//generateSessionId(c.chainId);
+export async function quoteAuction(
+  c: CommonConfig,
+  rfq: RFQ & { outAmount: string; slippage: number },
+): Promise<AuctionResult | ErrorObj> {
+  const sessionId = rfq.sessionId || "-1"; //generateSessionId(c.chainId);
   if (!rfq.sessionId) {
     rfq.sessionId = sessionId;
   }
 
   // Slippage is relevant only for quote phase , in swap phase ignore the slippage
   if (!rfq.slippage) {
-    logger.warn(`[${sessionId}]::quoteAuction slippage is not set, setting to ${c.defaultSlippage}`, rfq);
+    logger.warn(
+      `[${sessionId}]::quoteAuction slippage is not set, setting to ${c.defaultSlippage}`,
+      rfq,
+    );
     rfq.slippage = c.defaultSlippage;
   }
 
   if (rfq.slippage > c.maxSlippage) {
-    logger.warn(`[${rfq.sessionId}] quote::maxSlippage ❌ ${rfq.slippage} > ${c.maxSlippage}`);
-    return { error: "mse", sessionId: rfq.sessionId, errorData: { type: "maxSlippageExceeded", slippage: rfq.slippage } };
+    logger.warn(
+      `[${rfq.sessionId}] quote::maxSlippage ❌ ${rfq.slippage} > ${c.maxSlippage}`,
+    );
+    return {
+      error: "mse",
+      sessionId: rfq.sessionId,
+      errorData: { type: "maxSlippageExceeded", slippage: rfq.slippage },
+    };
   }
 
   if (rfq.outAmount == "0") {
@@ -36,32 +51,63 @@ export async function quoteAuction(c: CommonConfig, rfq: RFQ & { outAmount: stri
 
   if (isNativeAddress(rfq.inToken)) {
     logger.warn(`[${sessionId}]quoteAuction :: inToken is matic no quote`);
-    return { ...rfq, error: "tns", sessionId, errorData: { nativeIn: "not supported" } };
+    return {
+      ...rfq,
+      error: "tns",
+      sessionId,
+      errorData: { nativeIn: "not supported" },
+    };
   }
 
   //blocking IDIA token
-  if (rfq.outToken == "0x0b15ddf19d47e6a86a56148fb4afffc6929bcb89" && Number(c.chainId) === 56) {
+  if (
+    rfq.outToken == "0x0b15ddf19d47e6a86a56148fb4afffc6929bcb89" &&
+    Number(c.chainId) === 56
+  ) {
     logger.warn(`[${sessionId}]  quoteAuction :: inToken is BNB no quote`);
     return { error: "tb", sessionId, errorData: { outToken: "not supported" } };
   }
 
-  if ((THENA_GOV_TOKENS.includes(rfq.inToken.toLowerCase()) || THENA_GOV_TOKENS.includes(rfq.outToken.toLowerCase())) && Number(c.chainId) === 56) {
-    return { error: "nogov", sessionId, errorData: { thenaGovToken: "not supported" } };
+  if (
+    (THENA_GOV_TOKENS.includes(rfq.inToken.toLowerCase()) ||
+      THENA_GOV_TOKENS.includes(rfq.outToken.toLowerCase())) &&
+    Number(c.chainId) === 56
+  ) {
+    return {
+      error: "nogov",
+      sessionId,
+      errorData: { thenaGovToken: "not supported" },
+    };
   }
 
   if (
-    (rfq.outToken.toLowerCase() == "0xe580074a10360404af3abfe2d524d5806d993ea3" || rfq.inToken.toLowerCase() == "0xe580074a10360404af3abfe2d524d5806d993ea3") &&
+    (rfq.outToken.toLowerCase() ==
+      "0xe580074a10360404af3abfe2d524d5806d993ea3" ||
+      rfq.inToken.toLowerCase() ==
+      "0xe580074a10360404af3abfe2d524d5806d993ea3") &&
     Number(c.chainId) === 137
   ) {
     logger.warn(`[${sessionId}]  quoteAuction :: inToken is BNB no quote`);
-    return { error: "napai", sessionId, errorData: { outToken: "pay not supported" } };
+    return {
+      error: "napai",
+      sessionId,
+      errorData: { outToken: "pay not supported" },
+    };
   }
 
-  const inDollarValue = 0;//await getDollarValue(c, rfq.inAmount, rfq.inToken);
+  const inDollarValue = 40;//await getDollarValue(c, rfq.inAmount, rfq.inToken);
 
   if (inDollarValue < c.minDollarValueThreshold) {
-    logger.warn(`⚠️ quote::dollarValueToLow[${rfq.sessionId}]:  💵 ${inDollarValue} < ${c.minDollarValueThreshold}`);
-    return { error: "ldv", sessionId, errorData: { minDollarValue: `dollar value below threshold ${inDollarValue}` } };
+    logger.warn(
+      `⚠️ quote::dollarValueToLow[${rfq.sessionId}]:  💵 ${inDollarValue} < ${c.minDollarValueThreshold}`,
+    );
+    return {
+      error: "ldv",
+      sessionId,
+      errorData: {
+        minDollarValue: `dollar value below threshold ${inDollarValue}`,
+      },
+    };
   }
 
   logger.verbose(`[${sessionId}]:quoteAuction, rfq: ${JSON.stringify(rfq)}`);
@@ -70,10 +116,16 @@ export async function quoteAuction(c: CommonConfig, rfq: RFQ & { outAmount: stri
 
   for (let solver in c.exchanges) {
     //@ts-ignore
-    const isSolverDisabled = c.exchanges.hasOwnProperty(solver) ? c.exchanges[solver]?.disabled : false;
+    const isSolverDisabled = c.exchanges.hasOwnProperty(solver)
+      ? //@ts-ignore
+      c.exchanges[solver]?.disabled
+      : false;
     const isSolverForced = c.forceSolvers && c.forceSolvers.includes(solver);
 
-    if ((c.forceSolvers && !isSolverForced) || (isSolverDisabled && !isSolverForced)) {
+    if (
+      (c.forceSolvers && !isSolverForced) ||
+      (isSolverDisabled && !isSolverForced)
+    ) {
       continue;
     }
     let extraData = quoteExtraData(c, solver, rfq) || null;
@@ -92,7 +144,9 @@ export async function quoteAuction(c: CommonConfig, rfq: RFQ & { outAmount: stri
 
   let results: Quote[] = [];
   results = await Promise.all(arr);
-  logger.debug(`quoteAuction[${sessionId}]::results: ${JSON.stringify(results)}`);
+  logger.debug(
+    `quoteAuction[${sessionId}]::results: ${JSON.stringify(results)}`,
+  );
 
   const uiOutAmount = bn(rfq.outAmount || 0);
 
@@ -106,14 +160,18 @@ export async function quoteAuction(c: CommonConfig, rfq: RFQ & { outAmount: stri
 
     // outAmount < gasCostOutputToken (gas cost is higher then outAmount)
     if (bn(r.outAmount).lt(bn(r.gasCostOutputToken!!))) {
-      logger.warn(`⚠️⚠️⚠️⚠️ quote Amount is lower then gas cost ${r.outAmount} < ${r.gasCostOutputToken}`);
+      logger.warn(
+        `⚠️⚠️⚠️⚠️ quote Amount is lower then gas cost ${r.outAmount} < ${r.gasCostOutputToken}`,
+      );
       return false;
     }
 
     // provider < UI*1.5
     if (!bn(r.outAmount).lt(uiOutAmount.multipliedBy(1.5))) {
       logger.warn(`⚠️⚠️⚠️⚠️ quote Amount is higher then UI quote by 50%`);
-      logger.warn(`⚠️⚠️⚠️⚠️ ${r.outAmount.toString()} > ${uiOutAmount.toString()}`);
+      logger.warn(
+        `⚠️⚠️⚠️⚠️ ${r.outAmount.toString()} > ${uiOutAmount.toString()}`,
+      );
     }
 
     return bn(r.outAmount).lt(uiOutAmount.multipliedBy(1.5));
@@ -123,25 +181,50 @@ export async function quoteAuction(c: CommonConfig, rfq: RFQ & { outAmount: stri
   const auctionData = await logAuction(c, rfq, results);
 
   if (quotes.length === 0) {
-    logger.warn(`❞⚠️ quoteAuction[${sessionId}]::invalidResults No routes found: updatedErrorTypes=${JSON.stringify(updatedErrorTypes)}`);
+    logger.warn(
+      `❞⚠️ quoteAuction[${sessionId}]::invalidResults No routes found: updatedErrorTypes=${JSON.stringify(
+        updatedErrorTypes,
+      )}`,
+    );
     if (Object.keys(updatedErrorTypes).length == 0) {
-      return { error: "quoteNoResults", sessionId, errorData: updatedErrorTypes, quotes };
+      return {
+        error: "quoteNoResults",
+        sessionId,
+        errorData: updatedErrorTypes,
+        quotes,
+      };
     }
-    return { error: "quoteAuctionFailed", sessionId, errorData: updatedErrorTypes };
+    return {
+      error: "quoteAuctionFailed",
+      sessionId,
+      errorData: updatedErrorTypes,
+    };
   }
 
-  const outTokenDecimals = isNativeAddress(rfq.outToken) ? 18 : (await tryFetchErc20(c, rfq.outToken))?.decimals;
+  const outTokenDecimals = isNativeAddress(rfq.outToken)
+    ? 18
+    : (await tryFetchErc20(c, rfq.outToken))?.decimals;
 
   quotes.sort((a, b) => {
     const aPrice = bn(a.outAmount);
     const bPrice = bn(b.outAmount);
-    logger.warn(`[${sessionId}] ❞❞ ⚡️ ${b.exchange} => ${fmt(a, outTokenDecimals).toFixed(7)} | ${a.exchange} score: ${a.score} | ${a.exchange}`);
+    logger.warn(
+      `[${sessionId}] ❞❞ ⚡️ ${b.exchange} => ${fmt(
+        a,
+        outTokenDecimals,
+      ).toFixed(7)} | ${a.exchange} score: ${a.score} | ${a.exchange}`,
+    );
     return bPrice.gt(aPrice) ? 1 : -1;
   });
 
   let best = quotes[0];
 
-  logger.info(`[${sessionId}] quoteAuction()=> 🏆 best rate is ${fmt(best, outTokenDecimals).toFixed(7)} by ${best.exchange} score: ${best.score}`);
+  logger.info(
+    `[${sessionId}] quoteAuction()=> 🏆 best rate is ${fmt(
+      best,
+      outTokenDecimals,
+    ).toFixed(7)} by ${best.exchange} score: ${best.score}`,
+  );
 
   let rawData: any = [];
   quotes.forEach((element: any) => {
@@ -151,11 +234,23 @@ export async function quoteAuction(c: CommonConfig, rfq: RFQ & { outAmount: stri
     });
   });
 
-  redisWrapper.publish("rfq", JSON.stringify({ ...best, ...{ sessionId, auctionData, exchange: best.exchange, ...rfq } }));
+  redisWrapper.publish(
+    "rfq",
+    JSON.stringify({
+      ...best,
+      ...{ sessionId, auctionData, exchange: best.exchange, ...rfq },
+    }),
+  );
 
   return {
     ...best,
-    ...{ sessionId, auctionData, exchange: best.exchange, updatedErrorTypes, rawData: rawData },
+    ...{
+      sessionId,
+      auctionData,
+      exchange: best.exchange,
+      updatedErrorTypes,
+      rawData: rawData,
+    },
     quotes,
     inTokenUsd: (await getTokenPrice(c, rfq.inToken)).priceUsd,
     outTokenUsd: (await getTokenPrice(c, rfq.outToken)).priceUsd,
@@ -172,7 +267,10 @@ function quoteExtraData(c: CommonConfig, solver: string, rfq: RFQ) {
   return extraData;
 }
 
-export async function swapAuction(c: CommonConfig, rfq: SignedQuote & { slippage: number }): Promise<AuctionResult | ErrorObj> {
+export async function swapAuction(
+  c: CommonConfig,
+  rfq: SignedQuote & { slippage: number },
+): Promise<AuctionResult | ErrorObj> {
   const sessionId = rfq.sessionId || "-1";
 
   if (!rfq.slippage) {
@@ -207,7 +305,9 @@ export async function swapAuction(c: CommonConfig, rfq: SignedQuote & { slippage
   let results: any[] = [];
   results = await Promise.allSettled(arr);
   results = results.map((r) => r.value);
-  logger.debug(`swapAuction[${sessionId}]::results: ${JSON.stringify(results)}`);
+  logger.debug(
+    `swapAuction[${sessionId}]::results: ${JSON.stringify(results)}`,
+  );
 
   const uiOutAmount = bn(rfq.outAmount || 0);
 
@@ -222,7 +322,9 @@ export async function swapAuction(c: CommonConfig, rfq: SignedQuote & { slippage
     // provider < UI*1.5
     if (!bn(r.outAmount).lt(uiOutAmount.multipliedBy(1.5))) {
       logger.warn(`⚠️⚠️⚠️⚠️ quote Amount is higher then UI quote by 50%`);
-      logger.warn(`⚠️⚠️⚠️⚠️ ${r.outAmount.toString()} > ${uiOutAmount.toString()}`);
+      logger.warn(
+        `⚠️⚠️⚠️⚠️ ${r.outAmount.toString()} > ${uiOutAmount.toString()}`,
+      );
     }
 
     return bn(r.outAmount).lt(uiOutAmount.multipliedBy(1.5));
@@ -230,19 +332,27 @@ export async function swapAuction(c: CommonConfig, rfq: SignedQuote & { slippage
 
   let errorTypes = {};
 
-  const updatedErrorTypes = results.reduce((acc, { error, outAmount, exchange }) => {
-    if (error || !outAmount) {
-      acc[exchange] = error;
-    } else if (!outAmount) {
-      acc[exchange] = "ZeroAmount";
-    }
+  const updatedErrorTypes = results.reduce(
+    (acc, { error, outAmount, exchange }) => {
+      if (error || !outAmount) {
+        acc[exchange] = error;
+      } else if (!outAmount) {
+        acc[exchange] = "ZeroAmount";
+      }
 
-    return acc;
-  }, errorTypes);
+      return acc;
+    },
+    errorTypes,
+  );
 
   if (quotes.length === 0) {
-    logger.warn(`❞⚠️ swapAuction[${sessionId}]::invalidResults No routes found: updatedErrorTypes=${JSON.stringify(updatedErrorTypes)}`);
-    if (Object.keys(updatedErrorTypes).length == 0) return { error: "noResults", sessionId };
+    logger.warn(
+      `❞⚠️ swapAuction[${sessionId}]::invalidResults No routes found: updatedErrorTypes=${JSON.stringify(
+        updatedErrorTypes,
+      )}`,
+    );
+    if (Object.keys(updatedErrorTypes).length == 0)
+      return { error: "noResults", sessionId };
     return { error: "swapAuctionFailed", sessionId, updatedErrorTypes };
   }
 
@@ -251,7 +361,9 @@ export async function swapAuction(c: CommonConfig, rfq: SignedQuote & { slippage
 
   const inToken = await tryFetchErc20(c, rfq.inToken);
   const outToken = await tryFetchErc20(c, rfq.outToken);
-  const outTokenDecimals = isNativeAddress(rfq.outToken) ? 18 : outToken.decimals;
+  const outTokenDecimals = isNativeAddress(rfq.outToken)
+    ? 18
+    : outToken.decimals;
 
   const auctionData: {
     exchange: string;
@@ -271,9 +383,14 @@ export async function swapAuction(c: CommonConfig, rfq: SignedQuote & { slippage
   quotes.forEach((r) => {
     const outAmount = fmt(r, outTokenDecimals);
     logger.info(
-      `[${sessionId}] #️⃣ ${bn(rfq.inAmount).dividedBy(10 ** inToken.decimals)} ${inToken.symbol}  🥇${r.exchange}: ${outAmount} |⛽️ ${bn(r.gasCostOutputToken)
+      `[${sessionId}] #️⃣ ${bn(rfq.inAmount).dividedBy(
+        10 ** inToken.decimals,
+      )} ${inToken.symbol}  🥇${r.exchange}: ${outAmount} |⛽️ ${bn(
+        r.gasCostOutputToken,
+      )
         .dividedBy(10 ** outTokenDecimals)
-        .toFixed(4)} ${outToken.symbol} | ⛽️ [${r.gasCostOutputToken}]${outToken.symbol} | ⛽️Units:${r.gasUnits.toFixed(0)}`,
+        .toFixed(4)} ${outToken.symbol} | ⛽️ [${r.gasCostOutputToken}]${outToken.symbol
+      } | ⛽️Units:${r.gasUnits.toFixed(0)}`,
     );
 
     auctionData.push({
@@ -289,14 +406,23 @@ export async function swapAuction(c: CommonConfig, rfq: SignedQuote & { slippage
   //sort by score
   quotes.sort((a, b) => {
     logger.warn(
-      `[${sessionId}] 🔄 ⚡️ ${a.exchange} => ${fmt(a, outTokenDecimals).toFixed(7)} | ${a.exchange} score: ${a.score} | ${b.exchange} | a.score ${a.score}| b.score:${b.score} `,
+      `[${sessionId}] 🔄 ⚡️ ${a.exchange} => ${fmt(
+        a,
+        outTokenDecimals,
+      ).toFixed(7)} | ${a.exchange} score: ${a.score} | ${b.exchange
+      } | a.score ${a.score}| b.score:${b.score} `,
     );
     return b.score - a.score;
   });
 
   let best = quotes[0];
 
-  logger.info(`[${sessionId}] 🔄 SwapAuction 🏆 best rate is ${fmt(best, outTokenDecimals).toFixed(7)} by ${best.exchange} score: ${best.score}`);
+  logger.info(
+    `[${sessionId}] 🔄 SwapAuction 🏆 best rate is ${fmt(
+      best,
+      outTokenDecimals,
+    ).toFixed(7)} by ${best.exchange} score: ${best.score}`,
+  );
 
   let rawData: any = [];
   quotes.forEach((element: any) => {
@@ -309,20 +435,54 @@ export async function swapAuction(c: CommonConfig, rfq: SignedQuote & { slippage
   //
   if (c.chainId === 137) {
     const dutchPrice = getDutchPrice(c, rfq.serializedOrder);
-    logger.verbose(`[${sessionId}] 👀 auctionLastLook dutchPrice: ${dutchPrice}`);
-    let lastLookQuote = await auctionLastLook(c, rfq, "manifold", best.outAmount);
+    logger.verbose(
+      `[${sessionId}] 👀 auctionLastLook dutchPrice: ${dutchPrice}`,
+    );
+    let lastLookQuote = await auctionLastLook(
+      c,
+      rfq,
+      "manifold",
+      best.outAmount,
+    );
     if (!lastLookQuote.error) {
-      logger.warn(`[${sessionId}] ✅✅✅✅ auctionLastLook best rate is ${fmt(lastLookQuote, outTokenDecimals).toFixed(7)} by ${lastLookQuote.exchange} `);
+      logger.warn(
+        `[${sessionId}] ✅✅✅✅ auctionLastLook best rate is ${fmt(
+          lastLookQuote,
+          outTokenDecimals,
+        ).toFixed(7)} by ${lastLookQuote.exchange} `,
+      );
       best = lastLookQuote;
     }
-    logger.info(`[${sessionId}] auctionLastLook best rate is ${fmt(best, outTokenDecimals).toFixed(7)} by ${best.exchange} score: ${best.score}`);
+    logger.info(
+      `[${sessionId}] auctionLastLook best rate is ${fmt(
+        best,
+        outTokenDecimals,
+      ).toFixed(7)} by ${best.exchange} score: ${best.score}`,
+    );
   }
 
-  return { ...best, ...{ sessionId, auctionData, exchange: best.exchange, updatedErrorTypes, rawData: rawData }, quotes };
+  return {
+    ...best,
+    ...{
+      sessionId,
+      auctionData,
+      exchange: best.exchange,
+      updatedErrorTypes,
+      rawData: rawData,
+    },
+    quotes,
+  };
 }
 
-function auctionLastLook(c: CommonConfig, rfq: RFQ & { outAmount: string; slippage: number }, solver: string, baseLinePrice: string) {
-  logger.info(`auctionLastLook::solver: ${solver} baseLinePrice: ${baseLinePrice}`);
+function auctionLastLook(
+  c: CommonConfig,
+  rfq: RFQ & { outAmount: string; slippage: number },
+  solver: string,
+  baseLinePrice: string,
+) {
+  logger.info(
+    `auctionLastLook::solver: ${solver} baseLinePrice: ${baseLinePrice}`,
+  );
   // @ts-ignore
   return quote(c, rfq, c.exchanges[solver], true, false);
 }
@@ -332,11 +492,19 @@ function fmt(r: any, decimals = 18) {
   return bn(outAmount).dividedBy(10 ** decimals);
 }
 
-function CallQuoteWithTimeout(fn: Function, solver: string, rfq: RFQ, timeout: number) {
+function CallQuoteWithTimeout(
+  fn: Function,
+  solver: string,
+  rfq: RFQ,
+  timeout: number,
+) {
   let s = Date.now();
   return new Promise<Quote>((resolve) => {
     let id = setTimeout(() => {
-      logger.warn(`[${rfq.sessionId!!}] 🐌 ${solver} auction::timeout  ⏰ ${timeout / 1000}s`);
+      logger.warn(
+        `[${rfq.sessionId!!}] 🐌 ${solver} auction::timeout  ⏰ ${timeout / 1000
+        }s`,
+      );
       resolve({
         ...rfq,
         sessionId: rfq.sessionId!!,
@@ -359,7 +527,10 @@ function CallQuoteWithTimeout(fn: Function, solver: string, rfq: RFQ, timeout: n
     }, timeout);
 
     fn().then((res: Quote) => {
-      logger.warn(`auction::Quote ✅ [${solver}] ✅ amountOut:${res.outAmount} simulatedOutAmount:${res.simulateAmountOut}`, (Date.now() - s) / 1000);
+      logger.warn(
+        `auction::Quote ✅ [${solver}] ✅ amountOut:${res.outAmount} simulatedOutAmount:${res.simulateAmountOut}`,
+        (Date.now() - s) / 1000,
+      );
 
       clearTimeout(id);
       resolve(res);
@@ -370,23 +541,31 @@ function CallQuoteWithTimeout(fn: Function, solver: string, rfq: RFQ, timeout: n
 async function logAuctionErrors(results: any[], uiOutAmount: BN) {
   let errorTypes = {};
 
-  const updatedErrorTypes = results.reduce((acc, { error, outAmount, exchange }) => {
-    if (error || !outAmount) acc[exchange] = error;
-    else if (!outAmount) acc[exchange] = "ZeroAmount";
-    else if (!bn(outAmount).lt(uiOutAmount.multipliedBy(1.5))) acc[exchange] = "OutOfRange";
+  const updatedErrorTypes = results.reduce(
+    (acc, { error, outAmount, exchange }) => {
+      if (error || !outAmount) acc[exchange] = error;
+      else if (!outAmount) acc[exchange] = "ZeroAmount";
+      else if (!bn(outAmount).lt(uiOutAmount.multipliedBy(1.5)))
+        acc[exchange] = "OutOfRange";
 
-    return acc;
-  }, errorTypes);
+      return acc;
+    },
+    errorTypes,
+  );
   return updatedErrorTypes;
 }
 
 async function logAuction(c: CommonConfig, rfq: RFQ, quotes: Quote[]) {
-  const prices = quotes.map((r) => bn(r.outAmount).plus(r.gasCostOutputToken!!));
+  const prices = quotes.map((r) =>
+    bn(r.outAmount).plus(r.gasCostOutputToken!!),
+  );
   logger.verbose(`[${rfq.sessionId}] prices: ${prices}`);
 
   const inToken = await tryFetchErc20(c, rfq.inToken);
   const outToken = await tryFetchErc20(c, rfq.outToken);
-  const outTokenDecimals = isNativeAddress(rfq.outToken) ? 18 : outToken.decimals;
+  const outTokenDecimals = isNativeAddress(rfq.outToken)
+    ? 18
+    : outToken.decimals;
 
   const auctionData: {
     exchange: string;
@@ -404,11 +583,18 @@ async function logAuction(c: CommonConfig, rfq: RFQ, quotes: Quote[]) {
     const outAmount = fmt(r, outTokenDecimals);
     try {
       logger.info(
-        `[${rfq.sessionId}] #️⃣ ${bn(rfq.inAmount).dividedBy(10 ** inToken.decimals)} ${inToken.symbol}  🥇${r.exchange}: ${outAmount} |⛽️ ${bn(r.gasCostOutputToken!!)
+        `[${rfq.sessionId}] #️⃣ ${bn(rfq.inAmount).dividedBy(
+          10 ** inToken.decimals,
+        )} ${inToken.symbol}  🥇${r.exchange}: ${outAmount} |⛽️ ${bn(
+          r.gasCostOutputToken!!,
+        )
           .dividedBy(10 ** outTokenDecimals)
-          .toFixed(4)} ${outToken.symbol} $[${outTokenDecimals}] [${r.gasCostOutputToken}] | ⛽️Units:${r.gasUnits!!.toFixed(0)}`,
+          .toFixed(4)} ${outToken.symbol} $[${outTokenDecimals}] [${r.gasCostOutputToken
+        }] | ⛽️Units:${r.gasUnits!!.toFixed(0)}`,
       );
-    } catch (e) { }
+    } catch (e) {
+      logger.error(e)
+    }
 
     auctionData.push({
       exchange: r.exchange,

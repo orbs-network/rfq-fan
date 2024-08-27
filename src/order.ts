@@ -1,14 +1,26 @@
 import { Config } from "./config";
 import BN from "bignumber.js";
 import { OrderResult, RFQ } from "./types";
-import { contract, eqIgnoreCase, maxUint256, web3, zeroAddress } from "@defi.org/web3-candies";
+import {
+  contract,
+  eqIgnoreCase,
+  maxUint256,
+  web3,
+  zeroAddress,
+} from "@defi.org/web3-candies";
 import { DutchOrder, DutchOrderBuilder } from "@uniswap/uniswapx-sdk";
 import _ from "lodash";
 import logger from "./logger";
 import { ISolver } from "./solver";
 import { EXECUTOR_ABI, PERMIT2 } from "./consts";
 
-export async function createOrder(config: Config, rfq: RFQ & { slippage: number }, outAmountSolver: BN, gasOutAmount: BN, solver?: ISolver): Promise<OrderResult> {
+export async function createOrder(
+  config: Config,
+  rfq: RFQ & { slippage: number },
+  outAmountSolver: BN,
+  gasOutAmount: BN,
+  solver?: ISolver,
+): Promise<OrderResult> {
   const inAmount = BN(rfq.inAmount).toFixed(0);
   let uiAmount = BN(rfq.outAmount || "0");
 
@@ -16,7 +28,10 @@ export async function createOrder(config: Config, rfq: RFQ & { slippage: number 
   if (uiAmount.eq("0") || uiAmount.eq("-1")) {
     isExternalLiquidity = true;
     // uiAmount = solverAmount - external_slippage - gas
-    uiAmount = outAmountSolver.times(BN(100).minus(config.externalLiquiditySlippage)).div(100).minus(gasOutAmount);
+    uiAmount = outAmountSolver
+      .times(BN(100).minus(config.externalLiquiditySlippage))
+      .div(100)
+      .minus(gasOutAmount);
 
     logger.warn({
       type: "external Liquidity",
@@ -29,7 +44,10 @@ export async function createOrder(config: Config, rfq: RFQ & { slippage: number 
   }
 
   // UI Price + slippage - gas cost
-  let referencePrice = uiAmount.div(BN(100).minus(rfq.slippage).div(100)).minus(gasOutAmount).toFixed(0);
+  let referencePrice = uiAmount
+    .div(BN(100).minus(rfq.slippage).div(100))
+    .minus(gasOutAmount)
+    .toFixed(0);
 
   if (isExternalLiquidity) {
     // if the user is using external liquidity, ui price is the reference price ( Solver Price - Slippage )
@@ -40,10 +58,14 @@ export async function createOrder(config: Config, rfq: RFQ & { slippage: number 
 
   if (uiAmount && BN(outAmountSolver!!).gt(uiAmount) && !isExternalLiquidity) {
     // 10% of the saving is back to to the user
-    let savingsRefund = BN(outAmountSolver).minus(uiAmount).times(0.1).toFixed(0);
+    let savingsRefund = BN(outAmountSolver)
+      .minus(uiAmount)
+      .times(0.1)
+      .toFixed(0);
 
     logger.warn(
-      `[${rfq.sessionId
+      `[${
+        rfq.sessionId
       }] ⚠️savingsCashBack ${savingsRefund.toString()}  referencePrice:${referencePrice.toString()} outAmountSolver: ${outAmountSolver.toString()} uiAmount:${uiAmount.toString()} gasOutAmount:${gasOutAmount.toString()}`,
     );
     savingOutput = {
@@ -67,7 +89,9 @@ export async function createOrder(config: Config, rfq: RFQ & { slippage: number 
     throw new Error("outAmountAfterGas < 0");
   }
 
-  const startAmountSavings = outAmountAfterGas.times(1 - lhSlippage + 1).toFixed(0); // (1 - 0.99) + 1 =1.01
+  const startAmountSavings = outAmountAfterGas
+    .times(1 - lhSlippage + 1)
+    .toFixed(0); // (1 - 0.99) + 1 =1.01
   const endAmountSavings = outAmountAfterGas.toFixed(0);
 
   const { inToken, outToken } = rfq;
@@ -172,7 +196,11 @@ export function execute(
     swaps: any[];
   },
 ) {
-  const order = DutchOrder.parse(params.serializedOrder, config.chainId, PERMIT2);
+  const order = DutchOrder.parse(
+    params.serializedOrder,
+    config.chainId,
+    PERMIT2,
+  );
   const json = order.toJSON();
   const signer = order.getSigner(params.signature);
   if (
@@ -181,7 +209,10 @@ export function execute(
     !eqIgnoreCase(config.executor, json.additionalValidationContract) ||
     !eqIgnoreCase(signer, json.swapper)
   ) {
-    logger.warn("signedOrder  !== order.getSigner(params.signature)", json.swapper);
+    logger.warn(
+      "signedOrder  !== order.getSigner(params.signature)",
+      json.swapper,
+    );
     logger.warn({
       reactor: config.reactor,
       "json.reactor": json.reactor,
@@ -246,5 +277,10 @@ export function execute(
     }
   });
 
-  return contract(EXECUTOR_ABI as any, config.executor).methods.execute([[params.serializedOrder, params.signature]], calls, config.feeAddress, tokens);
+  return contract(EXECUTOR_ABI as any, config.executor).methods.execute(
+    [[params.serializedOrder, params.signature]],
+    calls,
+    config.feeAddress,
+    tokens,
+  );
 }
