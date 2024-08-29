@@ -3,13 +3,13 @@ import { withConfig } from "./config";
 import { divStrUint, pair2tokens } from "./pair";
 import * as dotenv from 'dotenv';
 import { AuctionResult } from "./types";
+import logger from "./logger";
 
 // Load environment variables from .env file
 dotenv.config();
 
 // Access an environment variable
 const user_address = process.env.USER_ADDRESS;
-
 
 export class Wrapper {
   constructor() { }
@@ -29,6 +29,10 @@ export class Wrapper {
 
     const inAmountDec = p2t.inToken.toTokenUint(amount)
 
+    if (!user_address) {
+      logger.error("USER_ADDRESS ws not provided")
+      return
+    }
     const rfq = {
       user: user_address,
       inToken: p2t.inToken.address,
