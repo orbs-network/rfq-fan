@@ -16,10 +16,7 @@ const THENA_GOV_TOKENS = [
   "0xcdc3a010a3473c0c4b2cb03d8489d6ba387b83cd",
 ];
 
-export async function quoteAuction(
-  c: CommonConfig,
-  rfq: RFQ & { outAmount: string; slippage: number },
-): Promise<AuctionResult | ErrorObj> {
+export async function quoteAuction(c: CommonConfig, rfq: RFQ & { outAmount: string; slippage: number },): Promise<AuctionResult | ErrorObj> {
   const sessionId = rfq.sessionId || "-1"; //generateSessionId(c.chainId);
   if (!rfq.sessionId) {
     rfq.sessionId = sessionId;
@@ -151,6 +148,7 @@ export async function quoteAuction(
   const uiOutAmount = bn(rfq.outAmount || 0);
 
   // filter out errors and rates that are too high over 50%
+  console.log('results', results, results.length)
   const quotes = results.filter((r) => {
     // filter out errors , no outAmount == 0 or simulateAmountOut == 0
     if (r.error || !r.outAmount || !r.simulateAmountOut) return false;
@@ -434,10 +432,7 @@ export async function swapAuction(
 
   //
   if (c.chainId === 137) {
-    const dutchPrice = getDutchPrice(c, rfq.serializedOrder);
-    logger.verbose(
-      `[${sessionId}] 👀 auctionLastLook dutchPrice: ${dutchPrice}`,
-    );
+
     let lastLookQuote = await auctionLastLook(
       c,
       rfq,
@@ -492,12 +487,7 @@ function fmt(r: any, decimals = 18) {
   return bn(outAmount).dividedBy(10 ** decimals);
 }
 
-function CallQuoteWithTimeout(
-  fn: Function,
-  solver: string,
-  rfq: RFQ,
-  timeout: number,
-) {
+function CallQuoteWithTimeout(fn: Function, solver: string, rfq: RFQ, timeout: number,) {
   let s = Date.now();
   return new Promise<Quote>((resolve) => {
     let id = setTimeout(() => {
@@ -515,8 +505,6 @@ function CallQuoteWithTimeout(
         exchange: solver,
         to: "",
         data: "",
-        permitData: "",
-        serializedOrder: "",
         raw: "",
         solverId: "",
         error: "timeout",

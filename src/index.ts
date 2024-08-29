@@ -17,7 +17,7 @@ function sendErr(res: Response, status: number, msg: string) {
   res.status(status).send(msg);
 }
 // GET /api/rfq/pairprice?chainid=137&pair=WETH/USDT&amount=10&side=1&isbase=1' --header 'x-apikey: API_KEY'
-app.get("/api/rfq/pairprice", (req: Request, res: Response) => {
+app.get("/api/rfq/pairprice", async (req: Request, res: Response) => {
   const { chainid, pair, amount, side, isbase } = req.query;
   const apiKey = req.header("x-api-key");
   if (!chainid) {
@@ -35,24 +35,26 @@ app.get("/api/rfq/pairprice", (req: Request, res: Response) => {
   if (!isbase) {
     return sendErr(res, 500, "isBase is missing");
   }
-
-  wrapper.quote(
+  const quote = await wrapper.quoteAuction(
     chainid as string,
     pair as string,
     amount as string,
     side as string,
-    isbase === "true",
+    isbase === "1",
   );
+  // error
+  if (quote.error) {
+    return sendErr(res, 500, "quoteAuction exception: " + quote.error);
+  }
 
-  // You can implement your own logic to validate the apiKey or check query params
-
+  // You can implement your own logic to validate the apiKey or check query params  
   const response = {
     success: true,
-    pair: pair || "AVAX/USDC",
-    side: side ? parseInt(side as string) : 1,
-    price: "10.215898650775",
-    baseAmount: amount || "120",
-    quoteAmount: "1225.907838093",
+    pair: pair,
+    side: side, // 0 = buy A | 1 = sell A
+    price: quote.price,
+    baseAmount: isbase ? amount : quote.outAmount,
+    quoteAmount: !isbase ? amount : quote.outAmount
   };
 
   res.json(response);

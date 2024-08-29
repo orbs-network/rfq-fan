@@ -143,7 +143,7 @@ export function dumpFetchAsCurl(url: string, options: any) {
     .map((key) => `-H '${key}: ${headers[key]}'`)
     .join(" ");
   const bodyString = body ? `-d '${body}'` : "";
-  return logger.verbose(
+  return logger.warn(
     `curl -X ${method} ${headerString} ${bodyString} '${url}'`,
   );
 }

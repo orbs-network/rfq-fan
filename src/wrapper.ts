@@ -1,38 +1,19 @@
 import { quoteAuction } from "./auction";
 import { withConfig } from "./config";
-import logger from "./logger";
-import { RFQ } from "./types";
+import { divStrUint, pair2tokens } from "./pair";
+import * as dotenv from 'dotenv';
+import { AuctionResult } from "./types";
 
-const tokens = {
-  USDT: {
-    desc: "USDT on polygon",
-    address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-    decimals: 6,
-  },
-  MATIC: {
-    desc: "erc-20 address of WMATIC wrapped",
-    address: "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270",
-    decimals: 18,
-  },
-  ETH: {
-    desc: "Polygon Wrapped Ether",
-    address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
-    decimals: 18,
-  },
-};
+// Load environment variables from .env file
+dotenv.config();
 
-function pair2tokens(pair: string): { inToken: string; outToken: string } {
-  return { inToken: tokens["MATIC"].address, outToken: tokens["USDT"].address };
-}
+// Access an environment variable
+const user_address = process.env.USER_ADDRESS;
+
+
 export class Wrapper {
-  constructor() {}
-  public async quote(
-    chainid: string,
-    pair: string,
-    amount: string,
-    side: string,
-    isbase: boolean,
-  ): Promise<void> {
+  constructor() { }
+  public async quoteAuction(chainid: string, pair: string, amount: string, side: string, isbase: boolean): Promise<any> {
     const config = withConfig({
       pathParameters: [],
       queryStringParameters: {
@@ -41,20 +22,39 @@ export class Wrapper {
       body: null,
     });
 
-    const { inToken, outToken } = pair2tokens(pair);
+    const p2t = pair2tokens(chainid, pair, side, isbase);
+    if (!p2t) {
+      return { error: "pair is not supported" }
+    }
+
+    const inAmountDec = p2t.inToken.toTokenUint(amount)
 
     const rfq = {
-      user: "0x00",
-      inToken: inToken,
-      outToken: outToken,
-      inAmount: "1000000000000000000",
-      sessionId: "-1",
-      outAmount: "",
-      slippage: 0,
+      user: user_address,
+      inToken: p2t.inToken.address,
+      outToken: p2t.outToken.address,
+      inAmount: inAmountDec,
+      sessionId: "",
+      outAmount: "-1",
+      slippage: 0.1,
     };
 
-    const res = quoteAuction(config, rfq);
-    console.log(res);
-    //const res = quote(config, rfq, solver, false, false, null)
+    try {
+      const res = await quoteAuction(config, rfq);
+      if (res.error) {
+        return res;
+      }
+      // out amount
+      const auctionRes = res as AuctionResult
+      const outAmount = p2t.outToken.fromTokenUint(auctionRes.outAmount)
+      // price
+      const price = p2t.inTokenIsA ? divStrUint(outAmount, amount) : divStrUint(amount, outAmount)
+
+      return { ...res, outAmount, price, inTokenIsA: p2t.inTokenIsA }
+    }
+    catch (e) {
+      return { error: "exception in quoteAuction", msg: e }
+    }
+
   }
 }

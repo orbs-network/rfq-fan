@@ -95,7 +95,6 @@ export async function reportQuote(
     auctionWinner: string | undefined;
     updatedErrorTypes: any;
     slippage: number;
-    serializedOrder: string;
     gasUnits: string;
     auctionData: any;
     simulateAmountOut: string;
@@ -165,7 +164,6 @@ export async function reportSwap(
     txRevertMessage: string;
     feeAmount: string;
     feeData: string;
-    serializedOrder: string;
     signature: string;
     gasUnitsTx: number;
     gasPriceTx: number;
@@ -227,7 +225,6 @@ export async function reportSwap(
     type: "swap",
     feeAmount: o.feeAmount,
     feeData: o.feeData,
-    serializedOrder: o.serializedOrder,
     signature: o.signature,
     swapStatus: o.txStatus == "pending" ? "during" : o.txHash ? "success" : "failed",
     txStatus: o.txStatus,

@@ -1,6 +1,5 @@
 import { bn, isNativeAddress } from "@defi.org/web3-candies";
 import { Quote, QuoteLite, RFQ } from "./types";
-import { createOrder } from "./order";
 import BN from "bignumber.js";
 
 import { CommonConfig } from "./config";
@@ -27,8 +26,6 @@ export function quoteError(
     outAmount: "0",
     minAmountOut: "0",
     estimateOutAmount: "0",
-    permitData: "",
-    serializedOrder: "",
     data: "",
     to: "",
     raw: "",
@@ -58,6 +55,9 @@ export async function quote(
       : tryFetchErc20(config, rfq.outToken),
   ]);
 
+  console.warn('---------------------------')
+  console.warn(q)
+  console.warn('---------------------------')
   if (q.error) {
     return quoteError(q.error, start, rfq, solver.name);
   }
@@ -83,8 +83,8 @@ export async function quote(
     let gasCostNative = bn(gasUnits).multipliedBy(gas.maxFeePerGas);
     logger.verbose(`[${rfq.sessionId}]`, "gasCostNative", {
       gasCostNative: gasCostNative.toString(),
-      gasUnits: gasUnits.toString(),
-      gas: gas.maxFeePerGas.toString(),
+      gasUnits: gasUnits.toString()
+      //gas: gas.maxFeePerGas.toString(),
     });
 
     if (solver.name === "rango") {
@@ -145,8 +145,7 @@ export async function quote(
 
     if (gasCostOutputToken.eq(0)) {
       logger.warn(
-        `quote::gasCostOutputTokenZero[${
-          rfq.sessionId
+        `quote::gasCostOutputTokenZero[${rfq.sessionId
         }]: ${gasCostOutputToken.toFixed(0)}`,
       );
       return quoteError("gasCostOutputTokenZero", start, rfq, solver.name);
@@ -156,10 +155,8 @@ export async function quote(
       gasCostOutputToken.dividedBy(outAmount).gt(config.outAmountGasThreshold)
     ) {
       logger.warn(
-        `quote::gasCostToHigh[${
-          rfq.sessionId
-        }]: ⚠️⚠️⚠️ ⛽️ ${gasCostOutputToken.toFixed(0)} / ${outAmount} > ${
-          config.outAmountGasThreshold
+        `quote::gasCostToHigh[${rfq.sessionId
+        }]: ⚠️⚠️⚠️ ⛽️ ${gasCostOutputToken.toFixed(0)} / ${outAmount} > ${config.outAmountGasThreshold
         } [${gasCostOutputToken.dividedBy(outAmount).toFixed(4)}]`,
       );
       return quoteError("gasCostToHigh", start, rfq, solver.name);
@@ -167,8 +164,7 @@ export async function quote(
   }
 
   logger.warn(
-    `solver.name:${solver.name} sessionId: ${
-      rfq.sessionId
+    `solver.name:${solver.name} sessionId: ${rfq.sessionId
     } quote::outAmount: ${outAmount} simulatedOutAmount: ${simulatedOutAmount.toFixed(
       0,
     )} outToken.symbol: ${outToken.symbol}`,
@@ -186,22 +182,20 @@ export async function quote(
   // const gasCostUsd = await getDollarValue(config, gasCostOutputToken.toString(), rfq.outToken);
   const outTokenPrice = 0; //await getDollarValue(config, "1", rfq.outToken);
   try {
-    let coFn = config.orderGenerator || createOrder;
-    const { serializedOrder, permitData, userOutAmount, userMinOutAmount } =
-      await coFn(config, rfq as any, BN(outAmount), gasCostOutputToken, solver);
+    //let coFn = config.orderGenerator || createOrder;
+    // const { serializedOrder, permitData, userOutAmount, userMinOutAmount } =
+    //   await coFn(config, rfq as any, BN(outAmount), gasCostOutputToken, solver);
 
-    outAmount = userOutAmount.toFixed(0);
+    //outAmount = userOutAmount.toFixed(0);
     return {
       ...rfq,
       exchange: solver.name,
       outAmount,
-      minAmountOut: userMinOutAmount?.toFixed(0) || "0",
+      minAmountOut: outAmount,
       estimateOutAmount,
       to: data.to,
       solverId: data.solverId,
       data: data.data,
-      permitData,
-      serializedOrder,
       raw: {
         route: q.result[0].route,
       },
@@ -218,8 +212,7 @@ export async function quote(
     };
   } catch (e) {
     logger.warn(
-      `⚠️ quote::createOrder:error::[${solver}]::[${
-        rfq.sessionId
+      `⚠️ quote::createOrder:error::[${solver}]::[${rfq.sessionId
       }]: ${e} [${gasCostOutputToken.toFixed(0)}]`,
       { gasCostOutputToken: gasCostOutputToken.toFixed(0) },
     );
@@ -233,8 +226,6 @@ export async function quote(
       data: "",
       solverId: "",
       raw: JSON.stringify(e),
-      permitData: "",
-      serializedOrder: "",
       elapsed: Date.now() - start,
       sessionId: rfq.sessionId || "",
       ...rfq,
@@ -329,7 +320,7 @@ async function callExchangeQuote(
   //@ts-ignore
   if (solver.name === "manifold" && solver.extraDynamic) {
     //@ts-ignore
-    let extraFn = solver.extraDynamic || function () {};
+    let extraFn = solver.extraDynamic || function () { };
     const priceWithSlippage = bn(rfq.outAmount!!).times(
       1 + rfq.slippage!! * 0.01,
     );
@@ -370,24 +361,27 @@ async function callExchangeQuote(
   ) {
     url = solver.url.replace("getBids", "quote");
   }
-
-  dumpFetchAsCurl(url, {
+  const fetchObj = {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "X-API-KEY": config.fillerApiKey,
     },
-    body: bodyStr,
-  });
+    body: bodyStr
+  }
+  dumpFetchAsCurl(url, fetchObj)
 
-  let req = fetch(`${url}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-KEY": config.fillerApiKey,
-    },
-    body: bodyStr,
-  });
+  logger.warn('before ------------------')
+  let req: Promise<Response>
+  try {
+    console.warn('fetch ------------------', fetch)
+    req = fetch(url, fetchObj);
+  } catch (e) {
+    logger.warn(e);
+    logger.warn(`failed to create req object`, e);
+    return
+  }
+  logger.warn('after ------------------')
   let res: Response;
   try {
     res = await req;
@@ -417,7 +411,7 @@ async function callExchangeQuote(
     let err = "generalError";
     try {
       err = data.error || data.result[0]?.errorMessage || "noResults";
-    } catch (e) {}
+    } catch (e) { }
     return {
       error: err,
       isError: true,
@@ -426,8 +420,7 @@ async function callExchangeQuote(
     };
   }
   logger.warn(
-    `[${rfq.sessionId}] Quote:${quoteWithData ? "🐢" : "🐇"} ⏱ [${
-      (Date.now() - now) / 1000 + "s"
+    `[${rfq.sessionId}] Quote:${quoteWithData ? "🐢" : "🐇"} ⏱ [${(Date.now() - now) / 1000 + "s"
     }]  [${solver.name}] => minAmountOut: ${data.result[0]?.route
       ?.amountOut} solverId: ${data.result[0]?.solverId}`,
   );
@@ -470,8 +463,7 @@ async function gasToOutputToken(
     logger.debug(
       `gasToOutputToken[${sessionId}] ==> gasCostNative:${gasCostNative.toFixed(
         0,
-      )}  * ${nativeTokenPrice.priceNative} * ${
-        outTokenPrice.priceNative
+      )}  * ${nativeTokenPrice.priceNative} * ${outTokenPrice.priceNative
       } /  =  gasCostOutputToken: ${gasCostOutputToken.toFixed(4)}`,
     );
     return gasCostOutputToken;
@@ -605,7 +597,7 @@ export async function getScore(
       logger.warn(
         ` Score [${solver}] fails: ${fails} success: ${success} => score: ${score}`,
       );
-    } catch (e) {}
+    } catch (e) { }
     clearTimeout(id);
     resolve(score);
   });

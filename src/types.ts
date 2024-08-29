@@ -19,8 +19,6 @@ export type Quote = RFQ & {
   exchange: string;
   to: string;
   data: string;
-  permitData: any;
-  serializedOrder: string;
   raw: any;
   score?: number;
   solverId: string;

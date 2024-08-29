@@ -162,13 +162,13 @@ const ChainConfigs = {
     chainName: "linea",
     baseGasCost: 300_000,
     exchanges: {
-      // paraswap: new OnchainSolver({
-      //   name: "paraswap",
-      //   type: "Paraswap",
-      //   tokenProxyAddress: "216b4b4ba9f3e719726886d34a177484278bfcae",
-      //   chainId: networks.bsc.id,
-      //   url: "https://clob-taker-paraswap-49d0d7fa5af9.herokuapp.com/getBids",
-      // }),
+      paraswap: new OnchainSolver({
+        name: "paraswap",
+        type: "Paraswap",
+        tokenProxyAddress: "216b4b4ba9f3e719726886d34a177484278bfcae",
+        chainId: networks.bsc.id,
+        url: "https://clob-taker-paraswap-49d0d7fa5af9.herokuapp.com/getBids",
+      }),
       // odos: new OnchainSolver({
       //   url: "https://clob-taker-odos-6e16140d766f.herokuapp.com/getBids",
       //   chainId: networks.linea.id,
@@ -620,11 +620,13 @@ export function withConfig(e: EventUrl): CommonConfig {
       throw new Error("network not supported! " + chainId);
   }
 
+  logger.info("FILLER_API_KEY: " + process.env.FILLER_API_KEY)
+
   return {
     ...dexConfig,
     ...featureFlags,
     //@ts-ignore
-    fillerApiKey: secrets.FILLER_API_KEY,
+    fillerApiKey: process.env.FILLER_API_KEY || secrets.FILLER_API_KEY,
     //@ts-ignore
     walletManagerApiKey: secrets.WALLET_MANAGER_API_KEY,
     networkUrl,
