@@ -2,7 +2,6 @@ import express, { Request, Response } from "express";
 import { Wrapper } from "./wrapper";
 import logger from "./logger";
 
-console.log("1------------------------------------------------");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -60,6 +59,20 @@ app.get("/api/rfq/pairprice", async (req: Request, res: Response) => {
   res.json(response);
 });
 
+// POST /api/rfq/prices
+// curl --location 'https://api.dexalot.com/api/rfq/prices?chainid=43114' --header 'x-apikey: API_KEY'
+app.post("/api/rfq/prices", (req: Request, res: Response) => {
+  const { chainid } = req.query;
+  const apiKey = req.header("x-api-key");
+  if (!chainid) {
+    return sendErr(res, 500, "chainId is missing");
+  }
+  // get orderbook
+  const book = wrapper.getOrderBook('137')
+  res.json(book);
+
+});
+
 // POST /api/rfq/firm
 app.post("/api/rfq/firm", (req: Request, res: Response) => {
   const response = {
@@ -85,6 +98,7 @@ app.post("/api/rfq/firm", (req: Request, res: Response) => {
 
   res.json(response);
 });
+
 
 // Start the server
 app.listen(PORT, () => {

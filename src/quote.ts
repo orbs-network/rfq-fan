@@ -370,18 +370,16 @@ async function callExchangeQuote(
     body: bodyStr
   }
   dumpFetchAsCurl(url, fetchObj)
-
-  logger.warn('before ------------------')
   let req: Promise<Response>
   try {
-    console.warn('fetch ------------------', fetch)
+
     req = fetch(url, fetchObj);
   } catch (e) {
     logger.warn(e);
     logger.warn(`failed to create req object`, e);
     return
   }
-  logger.warn('after ------------------')
+
   let res: Response;
   try {
     res = await req;

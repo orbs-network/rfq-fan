@@ -15,7 +15,7 @@ export class Token {
   toTokenUint(value: string): string {
     const bigNumberValue = new BN(value);
     const multiplier = new BN(10).pow(this.decimals);
-    const decimalValue = bigNumberValue.multipliedBy(multiplier);
+    const decimalValue = bigNumberValue.multipliedBy(multiplier).integerValue();
     return decimalValue.toString();
   }
 
@@ -40,6 +40,12 @@ const tokens: NetworkTokens = {
     USDT: new Token("USDT on polygon", "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", 6),
     MATIC: new Token("erc-20 address of WMATIC wrapped", "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270", 18),
     ETH: new Token("Polygon Wrapped Ether", "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", 18),
+    WETH: new Token("Polygon Wrapped Ether", "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", 18),
+  },
+  "56": {
+    USDT: new Token("USDT on polygon", "0x55d398326f99059fF775485246999027B3197955", 6),
+    BNB: new Token("bep-20 address of WBNB wrapped", "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", 18),
+    WBNB: new Token("bep-20 address of WBNB wrapped", "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", 18),
   },
 };
 

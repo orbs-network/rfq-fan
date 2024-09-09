@@ -3,6 +3,7 @@ import { withConfig } from "./config";
 import { divStrUint, pair2tokens } from "./pair";
 import * as dotenv from 'dotenv';
 import { AuctionResult } from "./types";
+import { OrderBook } from "./obk-build";
 import logger from "./logger";
 
 // Load environment variables from .env file
@@ -12,7 +13,22 @@ dotenv.config();
 const user_address = process.env.USER_ADDRESS;
 
 export class Wrapper {
-  constructor() { }
+  obook: OrderBook
+  constructor() {
+    // create order book to be updated
+    //const chainId = '56'
+    const chainId = '137'
+    const config = withConfig({
+      pathParameters: [],
+      queryStringParameters: {
+        chainid: chainId,
+      },
+      body: null,
+    });
+    this.obook = new OrderBook(chainId, config)
+    this.obook.buildAll()
+  }
+  // quoteAuction /////////////////////////////////
   public async quoteAuction(chainid: string, pair: string, amount: string, side: string, isbase: boolean): Promise<any> {
     const config = withConfig({
       pathParameters: [],
@@ -59,6 +75,10 @@ export class Wrapper {
     catch (e) {
       return { error: "exception in quoteAuction", msg: e }
     }
-
   }
+
+  public getOrderBook(chainid: string): Object {
+    return this.obook.get()
+  }
+
 }
