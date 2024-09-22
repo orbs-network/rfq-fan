@@ -9,7 +9,7 @@ import { getDutchPrice } from "./utils";
 import BN from "bignumber.js";
 import { getTokenPrice } from "./price-oracle";
 //import { simulateQuote } from "./swap";
-import redisWrapper from "./redis";
+//import redisWrapper from "./redis";
 
 const THENA_GOV_TOKENS = [
   "0xf4c8e32eadec4bfe97e0f595add0f4450a863a11",
@@ -232,13 +232,13 @@ export async function quoteAuction(c: CommonConfig, rfq: RFQ & { outAmount: stri
     });
   });
 
-  redisWrapper.publish(
-    "rfq",
-    JSON.stringify({
-      ...best,
-      ...{ sessionId, auctionData, exchange: best.exchange, ...rfq },
-    }),
-  );
+  // redisWrapper.publish(
+  //   "rfq",
+  //   JSON.stringify({
+  //     ...best,
+  //     ...{ sessionId, auctionData, exchange: best.exchange, ...rfq },
+  //   }),
+  // );
 
   return {
     ...best,
