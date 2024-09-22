@@ -6,7 +6,6 @@ import { AuctionResult } from "./types";
 import { OrderBook } from "./obk-build";
 import logger from "./logger";
 import { formatCallBody, callExchangeQuote } from "./call-solver"
-import { response } from "express";
 
 const manifold_url_firm = 'https://clob-taker-manifold-d96876edee4d.herokuapp.com/getBids'
 
@@ -31,7 +30,7 @@ export class Wrapper {
       body: null,
     });
     this.obook = new OrderBook(chainId, this.config)
-    //this.obook.start()
+    this.obook.start()
   }
   // quoteAuction /////////////////////////////////
   public async quoteAuction(chainid: string, pair: string, amount: string, side: string, isbase: boolean): Promise<any> {
@@ -87,44 +86,40 @@ export class Wrapper {
     if (res != null) {
       if (res.error) {
         console.error(`quotePair ${res.error}`)
-        return null
+        return { error: res.error };
       }
-
-      const outAmountTokenUnit = res.result[0]?.route?.amountOut
-      if (!outAmountTokenUnit) {
-        logger.warn(`firmQuote - failed to get outAmount from [result[0]?.route?.amountOut]`)
-        return null
-      }
-      // const outAmount = parseFloat(pairDat.outToken.fromTokenUint(outAmountTokenUnit))
-      // const price = pairDat.inTokenIsA ? outAmount / inAmount : inAmount / outAmount
-      // const orderAmount = pairDat.inTokenIsA ? inAmount : outAmount;
-      // return new Order(price.toFixed(8), orderAmount.toFixed(8))
-      const now = new Date(); // Get the current time
-      const expiry = new Date(now.getTime() + 1 * 60 * 1000); // Add one minute (60,000 milliseconds)
-      const maker = res.result[0].route.filler // maker is always the target liq provider(manifold) 
-      const to = res.result[0].route.parsedRoute?.to
-      const data = res.result[0].route.parsedRoute?.data
-      //execution_contract
-
-      const sig = "0x00"
-      return {
-        order: {
-          nonceAndMeta: "",
-          expiry: expiry,
-          makerAsset: makerAsset,
-          takerAsset: takerAsset,
-          maker: maker,
-          taker: userAddress,
-          makerAmount: outAmountTokenUnit,
-          takerAmount: takerAmount,
-        },
-        //signature: sig,
-        tx: {
-          to: to,
-          data: data,
-          gasLimit: 120000,
-        },
-      };
     }
+
+    const outAmountTokenUnit = res.result[0]?.route?.amountOut
+    if (!outAmountTokenUnit) {
+      logger.warn(`firmQuote - failed to get outAmount from [result[0]?.route?.amountOut]`)
+      return { error: 'failed to get amountOut' };
+    }
+
+    const now = new Date(); // Get the current time
+    const expiry = new Date(now.getTime() + 1 * 60 * 1000); // Add one minute (60,000 milliseconds)
+    const maker = res.result[0].route.filler // maker is always the target liq provider(manifold) 
+    const to = res.result[0].route.parsedRoute?.to
+    const data = res.result[0].route.parsedRoute?.data
+
+    const sig = "0x00"
+    return {
+      order: {
+        nonceAndMeta: "",
+        expiry: expiry,
+        makerAsset: makerAsset,
+        takerAsset: takerAsset,
+        maker: maker,
+        taker: userAddress,
+        makerAmount: outAmountTokenUnit,
+        takerAmount: takerAmount,
+      },
+      //signature: sig,
+      tx: {
+        to: to,
+        data: data,
+        gasLimit: 120000,
+      },
+    };
   }
 }
