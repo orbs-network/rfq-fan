@@ -38,9 +38,18 @@ type NetworkTokens = {
 const tokens: NetworkTokens = {
   "137": {
     USDT: new Token("USDT on polygon", "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", 6),
-    MATIC: new Token("erc-20 address of WMATIC wrapped", "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270", 18),
+    USDC: new Token("USDC on polygon", "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359", 6),
+    POL: new Token("erc-20 address of WPOL wrapped", "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270", 18),
+    WPOL: new Token("erc-20 address of WPOL wrapped", "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270", 18),
     ETH: new Token("Polygon Wrapped Ether", "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", 18),
     WETH: new Token("Polygon Wrapped Ether", "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", 18),
+    BTC: new Token("Polygon Wrapped BTC", "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6", 8),
+    WBTC: new Token("Polygon Wrapped BTC", "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6", 8),
+    QUICK: new Token("Quickswap governence", "0xb5c064f955d8e7f38fe0460c556a72987494ee17", 18),
+    IXT: new Token("PlanetIX", "0xe06bd4f5aac8d0aa337d13ec88db6defc6eaeefe", 18),
+
+
+
   },
   "56": {
     USDT: new Token("USDT on polygon", "0x55d398326f99059fF775485246999027B3197955", 6),
@@ -80,8 +89,20 @@ export function pair2tokens(chainId: string, pair: string, side: string, isbase:
   }
 
   const inTokenIsA = isbase == (side === "1")
-  const inToken = inTokenIsA ? chain[aToken] : chain[bToken]
-  const outToken = !inTokenIsA ? chain[aToken] : chain[bToken]
+  const inTokenSynbol = inTokenIsA ? aToken : bToken;
+  const outTokenSymbol = !inTokenIsA ? aToken : bToken;
+
+  const inToken = chain[inTokenSynbol]
+  if (!inToken) {
+    logger.error(`in token [${inTokenSynbol}] not found in chain [${chainId}]`)
+    return null
+  }
+  const outToken = chain[outTokenSymbol]
+  if (!outToken) {
+    logger.error(`in token [${outTokenSymbol}] not found in chain [${chainId}]`)
+    return null
+  }
+
 
   return { inToken, outToken, inTokenIsA };
 }
