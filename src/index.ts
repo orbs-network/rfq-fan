@@ -73,7 +73,7 @@ app.get("/api/rfq/prices", (req: Request, res: Response) => {
 });
 
 // POST /api/rfq/firm
-app.post("/api/rfq/firm", (req: Request, res: Response) => {
+app.post("/api/rfq/firm", async (req: Request, res: Response) => {
   const apiKey = req.header("x-api-key");
   const requiredFields = ['chainid', 'takerAsset', 'makerAsset', 'takerAmount', 'userAddress'];
 
@@ -83,7 +83,10 @@ app.post("/api/rfq/firm", (req: Request, res: Response) => {
     }
   }
 
-  const response = wrapper.firmQuote(req.body['chainid'], req.body['takerAsset'], req.body['makerAsset'], req.body['takerAmount'], req.body['userAddress'], req.body['executor'])
+  const response = await wrapper.firmQuote(req.body['chainid'], req.body['takerAsset'], req.body['makerAsset'], req.body['takerAmount'], req.body['userAddress'], req.body['executor'])
+  if (response.error) {
+    res.status(500).send(response.error)
+  }
   res.json(response);
 });
 
