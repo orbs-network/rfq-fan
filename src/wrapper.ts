@@ -1,10 +1,14 @@
 import { quoteAuction } from "./auction";
-import { withConfig } from "./config";
+import { CommonConfig, withConfig } from "./config";
 import { divStrUint, pair2tokens } from "./pair";
 import * as dotenv from 'dotenv';
 import { AuctionResult } from "./types";
 import { OrderBook } from "./obk-build";
 import logger from "./logger";
+import { formatCallBody, callExchangeQuote } from "./call-solver"
+import { response } from "express";
+
+const manifold_url_firm = 'https://clob-taker-manifold-d96876edee4d.herokuapp.com/getBids'
 
 // Load environment variables from .env file
 dotenv.config();
@@ -14,29 +18,23 @@ const user_address = process.env.USER_ADDRESS;
 
 export class Wrapper {
   obook: OrderBook
+  config: CommonConfig
   constructor() {
     // create order book to be updated
     //const chainId = '56'
     const chainId = '137'
-    const config = withConfig({
+    this.config = withConfig({
       pathParameters: [],
       queryStringParameters: {
         chainid: chainId,
       },
       body: null,
     });
-    this.obook = new OrderBook(chainId, config)
-    this.obook.buildAll()
+    this.obook = new OrderBook(chainId, this.config)
+    //this.obook.start()
   }
   // quoteAuction /////////////////////////////////
   public async quoteAuction(chainid: string, pair: string, amount: string, side: string, isbase: boolean): Promise<any> {
-    const config = withConfig({
-      pathParameters: [],
-      queryStringParameters: {
-        chainid: chainid,
-      },
-      body: null,
-    });
 
     const p2t = pair2tokens(chainid, pair, side, isbase);
     if (!p2t) {
@@ -60,7 +58,7 @@ export class Wrapper {
     };
 
     try {
-      const res = await quoteAuction(config, rfq);
+      const res = await quoteAuction(this.config, rfq);
       if (res.error) {
         return res;
       }
@@ -77,8 +75,56 @@ export class Wrapper {
     }
   }
 
+  // create reconstructed order book
   public getOrderBook(chainid: string): Object {
     return this.obook.get()
   }
 
+  // quoteAuction /////////////////////////////////
+  public async firmQuote(chainid: string, takerAsset: string, makerAsset: string, takerAmount: string, userAddress: string, executor: string): Promise<any> {
+    const body = formatCallBody('polygon', 'quickswap', takerAsset, takerAmount, makerAsset, userAddress, executor)
+    const res = await callExchangeQuote(this.config, manifold_url_firm, body)
+    if (res != null) {
+      if (res.error) {
+        console.error(`quotePair ${res.error}`)
+        return null
+      }
+
+      const outAmountTokenUnit = res.result[0]?.route?.amountOut
+      if (!outAmountTokenUnit) {
+        logger.warn(`firmQuote - failed to get outAmount from [result[0]?.route?.amountOut]`)
+        return null
+      }
+      // const outAmount = parseFloat(pairDat.outToken.fromTokenUint(outAmountTokenUnit))
+      // const price = pairDat.inTokenIsA ? outAmount / inAmount : inAmount / outAmount
+      // const orderAmount = pairDat.inTokenIsA ? inAmount : outAmount;
+      // return new Order(price.toFixed(8), orderAmount.toFixed(8))
+      const now = new Date(); // Get the current time
+      const expiry = new Date(now.getTime() + 1 * 60 * 1000); // Add one minute (60,000 milliseconds)
+      const maker = res.result[0].route.filler // maker is always the target liq provider(manifold) 
+      const to = res.result[0].route.parsedRoute?.to
+      const data = res.result[0].route.parsedRoute?.data
+      //execution_contract
+
+      const sig = "0x00"
+      return {
+        order: {
+          nonceAndMeta: "",
+          expiry: expiry,
+          makerAsset: makerAsset,
+          takerAsset: takerAsset,
+          maker: maker,
+          taker: userAddress,
+          makerAmount: outAmountTokenUnit,
+          takerAmount: takerAmount,
+        },
+        //signature: sig,
+        tx: {
+          to: to,
+          data: data,
+          gasLimit: 120000,
+        },
+      };
+    }
+  }
 }
