@@ -59,7 +59,7 @@ function sendErr(res: Response, status: number, msg: string) {
 //   res.json(response);
 // });
 
-// POST /api/rfq/prices
+// GET /api/rfq/prices
 // curl --location 'https://api.dexalot.com/api/rfq/prices?chainid=43114' --header 'x-apikey: API_KEY'
 app.get("/api/rfq/prices", (req: Request, res: Response) => {
   const { chainid } = req.query;
@@ -93,5 +93,6 @@ app.post("/api/rfq/firm", async (req: Request, res: Response) => {
 
 // Start the server
 app.listen(PORT, () => {
+  console.log('rfq-fan version 1.0.0')
   console.log(`Server is running on http://localhost:${PORT}`);
 });
