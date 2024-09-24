@@ -7,7 +7,7 @@ class RedisWrapper {
 
   constructor() {
     logger.verbose("RedisWrapper::constructor");
-    this.client = createClient({ database: 1 });
+    this.client = createClient();
 
     this.client.on("error", (error: Error) => {
       logger.verbose("Redis error:", error);
@@ -23,20 +23,22 @@ class RedisWrapper {
 
     this.client.on("connect", async () => {
       logger.verbose("Redis connected");
-      const res = await redisWrapper.select(1)
-      if (res?.error) {
-        console.error('select redis db failed')
-        console.error(res.error)
-      }
+      //const res = await redisWrapper.select(1)
+      // if (res?.error) {
+      //   console.error('select redis db failed')
+      //   console.error(res.error)
+      // }
 
     });
-    this.client.connect();
     logger.verbose("RedisWrapper::constructor end");
   }
   public async select(db: number) {
     return await this.client.select(db)
   }
 
+  public get Client() {
+    return this.client
+  }
   public get(key: string): Promise<string | null> {
     logger.verbose("RedisWrapper::get", key);
     return Promise.race([this.client.get(key), timeout(OPERATION_TIMEOUT)]);
@@ -96,10 +98,10 @@ function timeout(ms: number) {
 }
 
 const redisWrapper = new RedisWrapper();
-setTimeout(() => {
-  redisWrapper.set("pulse", "minute_" + Date.now());
-  logger.verbose("redisWrapper.set");
-}, 2000);
+// setTimeout(() => {
+//   redisWrapper.set("pulse", "minute_" + Date.now());
+//   logger.verbose("redisWrapper.set");
+// }, 2000);
 
 export default redisWrapper;
 
