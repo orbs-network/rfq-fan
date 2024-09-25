@@ -24,7 +24,7 @@ latest_release=$(curl -s "$GITHUB_REPO" | jq -r .tag_name)
 if [ -f "$LATEST_RELEASE_FILE" ]; then
     previous_release=$(cat "$LATEST_RELEASE_FILE")
 else
-    previous_release=""
+    previous_release="v1.0.0"
 fi
 
 # Compare releases
