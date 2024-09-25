@@ -1,6 +1,6 @@
 {
     "name": "@orbs-network/rfq-fan",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "private": true,
     "license": "MIT",
     "author": "yuval@orbs.com",
