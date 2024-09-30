@@ -4,6 +4,7 @@ import { divStrUint, pair2tokens } from "./pair";
 import * as dotenv from 'dotenv';
 import { AuctionResult } from "./types";
 import { OrderBook } from "./obk-build";
+import { ObkBnnc } from "./obk-bnnc";
 import logger from "./logger";
 import { formatCallBody, callExchangeQuote } from "./call-solver"
 
@@ -16,12 +17,14 @@ dotenv.config();
 const user_address = process.env.USER_ADDRESS;
 
 export class Wrapper {
-  obook: OrderBook
+  //obook: OrderBook;
+  obkBnnc: ObkBnnc;
   config: CommonConfig
   constructor() {
     // create order book to be updated
     //const chainId = '56'
     const chainId = '137'
+
     this.config = withConfig({
       pathParameters: [],
       queryStringParameters: {
@@ -29,8 +32,12 @@ export class Wrapper {
       },
       body: null,
     });
-    this.obook = new OrderBook(chainId, this.config)
-    this.obook.start()
+    // Solver' order book representation
+    //this.obook = new OrderBook(chainId, this.config)
+    // binance altered prices
+    this.obkBnnc = new ObkBnnc()
+    //this.obook.start()
+    this.obkBnnc.start()
   }
   // quoteAuction /////////////////////////////////
   public async quoteAuction(chainid: string, pair: string, amount: string, side: string, isbase: boolean): Promise<any> {
@@ -76,7 +83,8 @@ export class Wrapper {
 
   // create reconstructed order book
   public getOrderBook(chainid: string): Object {
-    return this.obook.get()
+    //return this.obook.get() - built one
+    return this.obkBnnc.get()
   }
 
   // quoteAuction /////////////////////////////////

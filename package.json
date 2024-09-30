@@ -17,7 +17,9 @@
         "dotenv": "^16.4.5",
         "express": "^4.19.2",
         "lodash": "^4.17.21",
-        "redis": "^4.7.0"
+        "node-fetch": "^2.7.0",
+        "redis": "^4.7.0",
+        "ws": "^8.18.0"
     },
     "devDependencies": {
         "@types/bcrypt": "^5.0.2",
@@ -26,7 +28,9 @@
         "@types/express": "^4.17.20",
         "@types/jest": "^29.5.12",
         "@types/lodash": "^4.17.7",
+        "@types/node-fetch": "^2.6.11",
         "@types/whatwg-fetch": "^0.0.33",
+        "@types/ws": "^8.5.12",
         "@vercel/ncc": "0.x",
         "jest": "^29.7.0"
     },
